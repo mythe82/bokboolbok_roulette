@@ -484,16 +484,6 @@ class _RoulettePageState extends State<RoulettePage> {
     final provider = Provider.of<PlayerProvider>(context);
     final p = provider.players;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          if (spinCount > p.length && p.isNotEmpty) {
-            spinCount = p.length;
-          }
-        });
-      }
-    });
-
     if (spinCount > p.length && p.isNotEmpty) {
       spinCount = p.length;
     }

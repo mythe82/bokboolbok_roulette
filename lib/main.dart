@@ -432,9 +432,7 @@ class _RoulettePageState extends State<RoulettePage> {
       if (spinCount == 1) {
         resultIndex = 0;
         _selected.add(resultIndex!);
-        Future.delayed(const Duration(milliseconds: 300), () {
-          _spinNext();
-        });
+        Future.delayed(const Duration(milliseconds: 300), _spinNext);
       } else {
         _spinNext();
       }
@@ -456,12 +454,10 @@ class _RoulettePageState extends State<RoulettePage> {
   }
 
   void _resetGame() {
-    setState(() {
-      resultIndex = null;
-      selectedIndexes.clear();
-      confirmedIndexes.clear();
-      _isSpinning = false;
-    });
+    resultIndex = null;
+    selectedIndexes.clear();
+    confirmedIndexes.clear();
+    _isSpinning = false;
   }
 
   String _ordinal(int n) {
@@ -469,7 +465,7 @@ class _RoulettePageState extends State<RoulettePage> {
       '첫번째', '두번째', '세번째', '네번째', '다섯번째',
       '여섯번째', '일곱번째', '여덟번째', '아홉번째', '열번째'
     ];
-    return n <= units.length ? units[n - 1] : '${n}번째';
+    return n <= units.length ? units[n - 1] : '$n번째';
   }
 
   @override
@@ -481,268 +477,277 @@ class _RoulettePageState extends State<RoulettePage> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<PlayerProvider>(context);
-    final p = provider.players;
+    return Consumer<PlayerProvider>(
+      builder: (context, provider, _) {
+        final p = provider.players;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          if (spinCount > p.length && p.isNotEmpty) {
-            spinCount = p.length;
-          }
-        });
-      }
-    });
+        if (p.length > 1 && spinCount >= p.length) {
+          spinCount = p.length - 1;
+        }
 
-    if (spinCount > p.length && p.isNotEmpty) {
-      spinCount = p.length;
-    }
-
-    return Scaffold(
-      appBar: AppBar(title: const Text("🎯 룰렛")),
-      body: Stack(
-        alignment: Alignment.center,
-        children: [
-          Column(
+        return Scaffold(
+          appBar: AppBar(title: const Text("🎯 룰렛")),
+          body: Stack(
+            alignment: Alignment.center,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+              Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
                       children: [
-                        const Text('당첨자 수:'),
-                        const SizedBox(width: 12),
-                        DropdownButton<int>(
-                          value: spinCount,
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                spinCount = value;
-                                _resetGame();
-                              });
-                            }
-                          },
-                          items: List.generate(
-                            p.length,
-                            (i) => DropdownMenuItem(
-                              value: i + 1,
-                              child: Text('${i + 1}명'),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('당첨자 수:'),
+                            const SizedBox(width: 12),
+                            Opacity(
+                              opacity: _isSpinning ? 0.5 : 1.0,
+                              child: IgnorePointer(
+                                ignoring: _isSpinning,
+                                child: DropdownButton<int>(
+                                  value: spinCount,
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        spinCount = value;
+                                        _resetGame();
+                                      });
+                                    }
+                                  },
+                                  items: List.generate(
+                                    p.length <= 1 ? 1 : p.length - 1,
+                                    (i) => DropdownMenuItem(
+                                      value: i + 1,
+                                      child: Text('${i + 1}명'),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            if (!_isSpinning &&
+                                AdHelper.isAdReady() &&
+                                p.length >= 2)
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    _resetGame(); // 자동 초기화 후
+                                  });
+                                  _startSpinning(p); // 추첨 시작
+                                },
+                                icon: const Icon(Icons.play_arrow),
+                                label: const Text('돌리기'),
+                              ),
+                            if (_isSpinning)
+                              const Padding(
+                                padding: EdgeInsets.only(left: 12),
+                                child: SizedBox(
+                                  width: 30,
+                                  height: 30,
+                                  child: Center(
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: CircularProgressIndicator(strokeWidth: 3),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 60,
-                      child: _isSpinning
-                          ? const Align(
-                              alignment: Alignment.center,
-                              child: SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: CircularProgressIndicator(strokeWidth: 4),
+                  ),
+
+                  // 룰렛
+                  SizedBox(
+                    height: MediaQuery.of(context).size.width * 0.8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            Colors.grey.shade300,
+                            Colors.white,
+                          ],
+                          center: Alignment.topLeft,
+                          radius: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            offset: const Offset(0, 8),
+                            blurRadius: 12,
+                          ),
+                          BoxShadow(
+                            color: Colors.tealAccent.withOpacity(0.3),
+                            spreadRadius: 2,
+                            blurRadius: 15,
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: p.length < 2
+                          ? const Center(
+                              child: Text(
+                                "🙋‍♀️ 참가자를 2명 이상 추가해주세요!",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             )
-                          : !_isSpinning &&
-                                  selectedIndexes.length < spinCount &&
-                                  AdHelper.isAdReady()
-                              ? ElevatedButton.icon(
-                                  onPressed: () => _startSpinning(p),
-                                  icon: const Icon(Icons.play_arrow),
-                                  label: const Text('룰렛 돌리기'),
-                                )
-                              : const SizedBox.shrink(),
-                    ),
-                    if (selectedIndexes.isNotEmpty)
-                      TextButton.icon(
-                        onPressed: _resetGame,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text("다시 시작"),
-                      ),
-                  ],
-                ),
-              ),
-
-              /// 룰렛 영역
-              SizedBox(
-                height: MediaQuery.of(context).size.width * 0.8,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        Colors.grey.shade300,
-                        Colors.white,
-                      ],
-                      center: Alignment.topLeft,
-                      radius: 1.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        offset: const Offset(0, 8),
-                        blurRadius: 12,
-                      ),
-                      BoxShadow(
-                        color: Colors.tealAccent.withOpacity(0.3),
-                        spreadRadius: 2,
-                        blurRadius: 15,
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  child: FortuneWheel(
-                    selected: _selected.stream,
-                    animateFirst: false,
-                    indicators: const [
-                      FortuneIndicator(
-                        alignment: Alignment.topCenter,
-                        child: TriangleIndicator(
-                          color: Colors.redAccent,
-                          width: 24,
-                          height: 24,
-                        ),
-                      ),
-                    ],
-                    physics: CircularPanPhysics(
-                      duration: const Duration(seconds: 2),
-                      curve: Curves.easeOutCubic,
-                    ),
-                    items: p.asMap().entries.map((e) {
-                      final pastelColors = [
-                        Colors.amber.shade100,
-                        Colors.cyan.shade100,
-                        Colors.pink.shade100,
-                        Colors.lime.shade100,
-                        Colors.indigo.shade100,
-                        Colors.deepOrange.shade100,
-                        Colors.green.shade100,
-                        Colors.purple.shade100,
-                        Colors.blue.shade100,
-                        Colors.teal.shade100,
-                      ];
-                      final borderColors = [
-                        Colors.amber.shade400,
-                        Colors.cyan.shade400,
-                        Colors.pink.shade400,
-                        Colors.lime.shade400,
-                        Colors.indigo.shade400,
-                        Colors.deepOrange.shade400,
-                        Colors.green.shade400,
-                        Colors.purple.shade400,
-                        Colors.blue.shade400,
-                        Colors.teal.shade400,
-                      ];
-
-                      return FortuneItem(
-                        child: Transform.scale(
-                          scale: 1.2,
-                          child: Text(
-                            e.value.name,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        style: FortuneItemStyle(
-                          color: pastelColors[e.key % pastelColors.length],
-                          borderColor: borderColors[e.key % borderColors.length],
-                          borderWidth: 3,
-                        ),
-                      );
-                    }).toList(),
-                    onAnimationEnd: () {
-                      if (resultIndex == null || resultIndex! >= p.length) return;
-
-                      final confirmedIndex = resultIndex!;
-                      final name = p[confirmedIndex].name;
-
-                      provider.addHistory(name);
-
-                      setState(() {
-                        selectedIndexes.add(confirmedIndex);
-                        confirmedIndexes.add(confirmedIndex);
-                      });
-
-                      if (confirmedIndexes.length == spinCount) {
-                        _confettiController.play();
-                      }
-
-                      Future.delayed(const Duration(milliseconds: 800), _spinNext);
-                    },
-                  ),
-                ),
-              ),
-
-              /// 당첨자 텍스트
-              SizedBox(
-                height: 60,
-                child: confirmedIndexes.length == spinCount
-                    ? Center(
-                        child: Text(
-                          '🎊 최종 당첨자: ${confirmedIndexes.map((i) => p[i].name).join(', ')}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.teal,
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-
-              /// 당첨자 리스트
-              Expanded(
-                child: confirmedIndexes.isNotEmpty
-                    ? ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: confirmedIndexes.length,
-                        itemBuilder: (context, index) {
-                          final name = p[confirmedIndexes[index]].name;
-                          return Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            child: ListTile(
-                              leading: Icon(
-                                Icons.emoji_events,
-                                color: Colors.orange.shade800,
+                          : FortuneWheel(
+                              selected: _selected.stream,
+                              animateFirst: false,
+                              indicators: const [
+                                FortuneIndicator(
+                                  alignment: Alignment.topCenter,
+                                  child: TriangleIndicator(
+                                    color: Colors.redAccent,
+                                    width: 24,
+                                    height: 24,
+                                  ),
+                                ),
+                              ],
+                              physics: CircularPanPhysics(
+                                duration: const Duration(seconds: 2),
+                                curve: Curves.easeOutCubic,
                               ),
-                              title: Text('${_ordinal(index + 1)} 당첨자: $name'),
+                              items: p.asMap().entries.map((e) {
+                                final pastelColors = [
+                                  Colors.amber.shade100,
+                                  Colors.cyan.shade100,
+                                  Colors.pink.shade100,
+                                  Colors.lime.shade100,
+                                  Colors.indigo.shade100,
+                                  Colors.deepOrange.shade100,
+                                  Colors.green.shade100,
+                                  Colors.purple.shade100,
+                                  Colors.blue.shade100,
+                                  Colors.teal.shade100,
+                                ];
+                                final borderColors = [
+                                  Colors.amber.shade400,
+                                  Colors.cyan.shade400,
+                                  Colors.pink.shade400,
+                                  Colors.lime.shade400,
+                                  Colors.indigo.shade400,
+                                  Colors.deepOrange.shade400,
+                                  Colors.green.shade400,
+                                  Colors.purple.shade400,
+                                  Colors.blue.shade400,
+                                  Colors.teal.shade400,
+                                ];
+
+                                return FortuneItem(
+                                  child: Transform.scale(
+                                    scale: 1.2,
+                                    child: Text(
+                                      e.value.name,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                  style: FortuneItemStyle(
+                                    color: pastelColors[e.key % pastelColors.length],
+                                    borderColor: borderColors[e.key % borderColors.length],
+                                    borderWidth: 3,
+                                  ),
+                                );
+                              }).toList(),
+                              onAnimationEnd: () {
+                                if (resultIndex == null || resultIndex! >= p.length) return;
+
+                                final confirmedIndex = resultIndex!;
+                                final name = p[confirmedIndex].name;
+
+                                provider.addHistory(name);
+
+                                setState(() {
+                                  selectedIndexes.add(confirmedIndex);
+                                  confirmedIndexes.add(confirmedIndex);
+                                });
+
+                                if (confirmedIndexes.length == spinCount) {
+                                  _confettiController.play();
+                                }
+
+                                Future.delayed(const Duration(milliseconds: 800), _spinNext);
+                              },
                             ),
-                          );
-                        },
-                      )
-                    : const SizedBox.shrink(),
+                    ),
+                  ),
+
+                  // 당첨자 출력 텍스트
+                  SizedBox(
+                    height: 60,
+                    child: confirmedIndexes.length == spinCount
+                        ? Center(
+                            child: Text(
+                              '🎊 최종 당첨자: ${confirmedIndexes.map((i) => p[i].name).join(', ')}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal,
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+
+                  // 당첨자 리스트
+                  Expanded(
+                    child: confirmedIndexes.isNotEmpty
+                        ? ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: confirmedIndexes.length,
+                            itemBuilder: (context, index) {
+                              final name = p[confirmedIndexes[index]].name;
+                              return Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                child: ListTile(
+                                  leading: Icon(
+                                    Icons.emoji_events,
+                                    color: Colors.orange.shade800,
+                                  ),
+                                  title:
+                                      Text('${_ordinal(index + 1)} 당첨자: $name'),
+                                ),
+                              );
+                            },
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                  const MyBannerAd(),
+                ],
               ),
-              const MyBannerAd(), // 하단 배너
+
+              // 축하 이펙트
+              ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                emissionFrequency: 0.05,
+                numberOfParticles: 30,
+                maxBlastForce: 20,
+                minBlastForce: 5,
+                gravity: 0.3,
+              ),
             ],
           ),
-
-          /// 🎉 축하 이펙트
-          ConfettiWidget(
-            confettiController: _confettiController,
-            blastDirectionality: BlastDirectionality.explosive,
-            shouldLoop: false,
-            emissionFrequency: 0.05,
-            numberOfParticles: 30,
-            maxBlastForce: 20,
-            minBlastForce: 5,
-            gravity: 0.3,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
-
 
 
 class HistoryPage extends StatelessWidget {

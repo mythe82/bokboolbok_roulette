@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <application
-      android:label="bokboolbok_roulette"
+      android:label="복불복 룰렛"
       android:name="${applicationName}"
       android:icon="@mipmap/ic_launcher">
 

@@ -1,0 +1,19 @@
+{
+  "@@locale": "en",
+  "participants": "Participants",
+  "roulette": "Roulette",
+  "history": "History",
+  "enterParticipantName": "Enter participant name",
+  "exampleName": "Ex: John Doe",
+  "noParticipants": "🙋‍♀️ Please add participants!",
+  "winner": "Winner",
+  "spinRoulette": "Spin",
+  "finalWinner": "Final Winner",
+  "noHistory": "📭 No winning history yet.",
+  "times": " times",
+  "resetHistory": "Reset History",
+  "confirmResetHistory": "Are you sure you want to reset the entire history?",
+  "cancel": "Cancel",
+  "reset": "Reset",
+  "personUnit": "person"
+}

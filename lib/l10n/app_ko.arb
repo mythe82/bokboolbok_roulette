@@ -1,0 +1,19 @@
+{
+  "@@locale": "ko",
+  "participants": "참가자",
+  "roulette": "룰렛",
+  "history": "히스토리",
+  "enterParticipantName": "참가자 이름 입력",
+  "exampleName": "예: 홍길동",
+  "noParticipants": "🙋‍♀️ 참가자를 추가해주세요!",
+  "winner": "당첨자 수",
+  "spinRoulette": "돌리기",
+  "finalWinner": "최종 당첨자",
+  "noHistory": "📭 아직 당첨 기록이 없습니다.",
+  "times": "회",
+  "resetHistory": "히스토리 초기화",
+  "confirmResetHistory": "정말로 모든 당첨 기록을 삭제하시겠습니까?",
+  "cancel": "취소",
+  "reset": "초기화",
+  "personUnit": "명"
+}

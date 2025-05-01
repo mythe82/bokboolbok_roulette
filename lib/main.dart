@@ -7,10 +7,14 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+// ✅ 추가: Localization 지원
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
-  AdHelper.loadInterstitialAd(); // ← 추가
+  AdHelper.loadInterstitialAd();
   final playerProvider = PlayerProvider();
   await playerProvider.loadFromPrefs();
   runApp(
@@ -18,6 +22,20 @@ void main() async {
       create: (_) => playerProvider,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        // locale: const Locale('en'), // ← 여기에 강제로 영어 설정
+
+        // ✅ Localization 추가
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en'),
+          Locale('ko'),
+        ],
+
         theme: ThemeData(
           scaffoldBackgroundColor: const Color(0xFFF7FDFC),
           colorScheme: ColorScheme.fromSwatch(
@@ -76,7 +94,7 @@ void main() async {
     ),
   );
 }
-
+// ✅ AdHelper
 class AdHelper {
   static InterstitialAd? _interstitialAd;
   static bool _isAdLoaded = false;
@@ -84,13 +102,12 @@ class AdHelper {
   static bool isAdReady() => _isAdLoaded;
 
   static void loadInterstitialAd() {
-    // Dispose of any existing ad
     _interstitialAd?.dispose();
     _interstitialAd = null;
     _isAdLoaded = false;
 
     InterstitialAd.load(
-      adUnitId: 'ca-app-pub-3940256099942544/1033173712', // ✅ 테스트 전면 광고 ID
+      adUnitId: 'ca-app-pub-3940256099942544/1033173712',
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
@@ -113,7 +130,6 @@ class AdHelper {
           _interstitialAd = null;
           _isAdLoaded = false;
           loadInterstitialAd();
-          // Delay after ad is closed
           Future.delayed(const Duration(seconds: 3), onAdClosedAfterDelay);
         },
         onAdFailedToShowFullScreenContent: (ad, error) {
@@ -124,7 +140,6 @@ class AdHelper {
           onAdClosedAfterDelay();
         },
       );
-
       _interstitialAd!.show();
       _isAdLoaded = false;
     } else {
@@ -133,6 +148,7 @@ class AdHelper {
   }
 }
 
+// ✅ MyBannerAd
 class MyBannerAd extends StatefulWidget {
   const MyBannerAd({super.key});
 
@@ -147,9 +163,7 @@ class _MyBannerAdState extends State<MyBannerAd> {
   void initState() {
     super.initState();
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111', // ✅ 테스트 ID
-      // adUnitId: 'ca-app-pub-3960681231120180/2821709658', // ✅ 하단 배너
-
+      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
@@ -179,6 +193,7 @@ class _MyBannerAdState extends State<MyBannerAd> {
   }
 }
 
+// ✅ Player, PlayerProvider
 class Player {
   final String name;
   Player(this.name);
@@ -228,8 +243,9 @@ class PlayerProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  String _encodeHistory() =>
-      _history.entries.map((e) => '${e.key}:${e.value}').join('|');
+  String _encodeHistory() {
+    return _history.entries.map((e) => '${e.key}:${e.value}').join('|');
+  }
 
   Map<String, int> _decodeHistory(String encoded) {
     final Map<String, int> map = {};
@@ -255,7 +271,7 @@ class PlayerProvider with ChangeNotifier {
     notifyListeners();
   }
 }
-
+// ✅ MainScreen
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -284,18 +300,18 @@ class _MainScreenState extends State<MainScreen> {
             _selectedIndex = index;
           });
         },
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: '참가자',
+            icon: const Icon(Icons.group),
+            label: AppLocalizations.of(context)!.participants,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.casino),
-            label: '룰렛',
+            icon: const Icon(Icons.casino),
+            label: AppLocalizations.of(context)!.roulette,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: '히스토리',
+            icon: const Icon(Icons.history),
+            label: AppLocalizations.of(context)!.history,
           ),
         ],
       ),
@@ -303,7 +319,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-// 참가자 페이지
+// ✅ ParticipantsPage
 class ParticipantsPage extends StatefulWidget {
   const ParticipantsPage({super.key});
 
@@ -320,7 +336,9 @@ class _ParticipantsPageState extends State<ParticipantsPage> {
     final players = provider.players;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("👥 참가자 관리")),
+      appBar: AppBar(
+        title: Text("👥 ${AppLocalizations.of(context)!.participants}"),
+      ),
       body: Column(
         children: [
           Expanded(
@@ -335,8 +353,8 @@ class _ParticipantsPageState extends State<ParticipantsPage> {
                       _controller.clear();
                     },
                     decoration: InputDecoration(
-                      labelText: '참가자 이름 입력',
-                      hintText: '예: 홍길동',
+                      labelText: AppLocalizations.of(context)!.enterParticipantName,
+                      hintText: AppLocalizations.of(context)!.exampleName,
                       prefixIcon: const Icon(Icons.person_add_alt),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.check),
@@ -350,7 +368,7 @@ class _ParticipantsPageState extends State<ParticipantsPage> {
                   const SizedBox(height: 16),
                   Expanded(
                     child: players.isEmpty
-                        ? const Center(child: Text('🙋‍♀️ 참가자를 추가해주세요!'))
+                        ? Center(child: Text(AppLocalizations.of(context)!.noParticipants))
                         : ListView.builder(
                             itemCount: players.length,
                             itemBuilder: (context, index) {
@@ -390,8 +408,6 @@ class _ParticipantsPageState extends State<ParticipantsPage> {
     );
   }
 }
-
-// 룰렛 페이지
 class RoulettePage extends StatefulWidget {
   const RoulettePage({super.key});
 
@@ -402,7 +418,6 @@ class RoulettePage extends StatefulWidget {
 class _RoulettePageState extends State<RoulettePage> {
   final StreamController<int> _selected = StreamController<int>.broadcast();
   late ConfettiController _confettiController;
-
   final Random _random = Random();
   List<int> selectedIndexes = [];
   List<int> confirmedIndexes = [];
@@ -414,8 +429,14 @@ class _RoulettePageState extends State<RoulettePage> {
   @override
   void initState() {
     super.initState();
-    _confettiController =
-        ConfettiController(duration: const Duration(seconds: 2));
+    _confettiController = ConfettiController(duration: const Duration(seconds: 2));
+  }
+
+  @override
+  void dispose() {
+    _selected.close();
+    _confettiController.dispose();
+    super.dispose();
   }
 
   void _startSpinning(List<Player> p) {
@@ -454,10 +475,12 @@ class _RoulettePageState extends State<RoulettePage> {
   }
 
   void _resetGame() {
-    resultIndex = null;
-    selectedIndexes.clear();
-    confirmedIndexes.clear();
-    _isSpinning = false;
+    setState(() {
+      resultIndex = null;
+      selectedIndexes.clear();
+      confirmedIndexes.clear();
+      _isSpinning = false;
+    });
   }
 
   String _ordinal(int n) {
@@ -466,13 +489,6 @@ class _RoulettePageState extends State<RoulettePage> {
       '여섯번째', '일곱번째', '여덟번째', '아홉번째', '열번째'
     ];
     return n <= units.length ? units[n - 1] : '$n번째';
-  }
-
-  @override
-  void dispose() {
-    _selected.close();
-    _confettiController.dispose();
-    super.dispose();
   }
 
   @override
@@ -486,220 +502,197 @@ class _RoulettePageState extends State<RoulettePage> {
         }
 
         return Scaffold(
-          appBar: AppBar(title: const Text("🎯 룰렛")),
+          appBar: AppBar(
+            title: Text("🎯 ${AppLocalizations.of(context)!.roulette}"),
+          ),
           body: Stack(
             alignment: Alignment.center,
             children: [
               Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('당첨자 수:'),
-                            const SizedBox(width: 12),
-                            Opacity(
-                              opacity: _isSpinning ? 0.5 : 1.0,
-                              child: IgnorePointer(
-                                ignoring: _isSpinning,
-                                child: DropdownButton<int>(
-                                  value: spinCount,
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      setState(() {
-                                        spinCount = value;
-                                        _resetGame();
-                                      });
-                                    }
-                                  },
-                                  items: List.generate(
-                                    p.length <= 1 ? 1 : p.length - 1,
-                                    (i) => DropdownMenuItem(
-                                      value: i + 1,
-                                      child: Text('${i + 1}명'),
-                                    ),
-                                  ),
-                                ),
+                  const SizedBox(height: 8),
+
+                  /// 당첨자 수 + 돌리기 버튼
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('${AppLocalizations.of(context)!.winner}:'),
+                      const SizedBox(width: 8),
+                      Opacity(
+                        opacity: _isSpinning ? 0.5 : 1.0,
+                        child: IgnorePointer(
+                          ignoring: _isSpinning,
+                          child: DropdownButton<int>(
+                            value: spinCount,
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  spinCount = value;
+                                  _resetGame();
+                                });
+                              }
+                            },
+                            items: List.generate(
+                              p.length <= 1 ? 1 : p.length - 1,
+                              (i) => DropdownMenuItem(
+                                value: i + 1,
+                                child: Text('${i + 1}${AppLocalizations.of(context)!.personUnit}'),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            if (!_isSpinning &&
-                                AdHelper.isAdReady() &&
-                                p.length >= 2)
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  setState(() {
-                                    _resetGame(); // 자동 초기화 후
-                                  });
-                                  _startSpinning(p); // 추첨 시작
-                                },
-                                icon: const Icon(Icons.play_arrow),
-                                label: const Text('돌리기'),
-                              ),
-                            if (_isSpinning)
-                              const Padding(
-                                padding: EdgeInsets.only(left: 12),
-                                child: SizedBox(
-                                  width: 30,
-                                  height: 30,
-                                  child: Center(
-                                    child: AspectRatio(
-                                      aspectRatio: 1,
-                                      child: CircularProgressIndicator(strokeWidth: 3),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (!_isSpinning && AdHelper.isAdReady() && p.length >= 2)
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            _resetGame();
+                            _startSpinning(p);
+                          },
+                          icon: const Icon(Icons.play_arrow),
+                          label: Text(AppLocalizations.of(context)!.spinRoulette),
+                        ),
+                      if (_isSpinning)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 12),
+                          child: SizedBox(
+                            width: 30,
+                            height: 30,
+                            child: Center(
+                              child: AspectRatio(
+                                aspectRatio: 1,
+                                child: CircularProgressIndicator(strokeWidth: 3),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
 
-                  // 룰렛
-                  SizedBox(
-                    height: MediaQuery.of(context).size.width * 0.8,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.grey.shade300,
-                            Colors.white,
-                          ],
-                          center: Alignment.topLeft,
-                          radius: 1.2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            offset: const Offset(0, 8),
-                            blurRadius: 12,
-                          ),
-                          BoxShadow(
-                            color: Colors.tealAccent.withOpacity(0.3),
-                            spreadRadius: 2,
-                            blurRadius: 15,
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(12),
-                      child: p.length < 2
-                          ? const Center(
-                              child: Text(
-                                "🙋‍♀️ 참가자를 2명 이상 추가해주세요!",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            )
-                          : FortuneWheel(
-                              selected: _selected.stream,
-                              animateFirst: false,
-                              indicators: const [
-                                FortuneIndicator(
-                                  alignment: Alignment.topCenter,
-                                  child: TriangleIndicator(
-                                    color: Colors.redAccent,
-                                    width: 24,
-                                    height: 24,
-                                  ),
-                                ),
-                              ],
-                              physics: CircularPanPhysics(
-                                duration: const Duration(seconds: 2),
-                                curve: Curves.easeOutCubic,
-                              ),
-                              items: p.asMap().entries.map((e) {
-                                final pastelColors = [
-                                  Colors.amber.shade100,
-                                  Colors.cyan.shade100,
-                                  Colors.pink.shade100,
-                                  Colors.lime.shade100,
-                                  Colors.indigo.shade100,
-                                  Colors.deepOrange.shade100,
-                                  Colors.green.shade100,
-                                  Colors.purple.shade100,
-                                  Colors.blue.shade100,
-                                  Colors.teal.shade100,
-                                ];
-                                final borderColors = [
-                                  Colors.amber.shade400,
-                                  Colors.cyan.shade400,
-                                  Colors.pink.shade400,
-                                  Colors.lime.shade400,
-                                  Colors.indigo.shade400,
-                                  Colors.deepOrange.shade400,
-                                  Colors.green.shade400,
-                                  Colors.purple.shade400,
-                                  Colors.blue.shade400,
-                                  Colors.teal.shade400,
-                                ];
+                  const SizedBox(height: 12),
 
-                                return FortuneItem(
-                                  child: Transform.scale(
-                                    scale: 1.2,
-                                    child: Text(
-                                      e.value.name,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
+                  /// 룰렛
+                  AspectRatio(
+                    aspectRatio: 1, // 정사각형 유지
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Colors.grey.shade300,
+                              Colors.white,
+                            ],
+                            center: Alignment.topLeft,
+                            radius: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              offset: const Offset(0, 8),
+                              blurRadius: 12,
+                            ),
+                            BoxShadow(
+                              color: Colors.tealAccent.withOpacity(0.3),
+                              spreadRadius: 2,
+                              blurRadius: 15,
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        child: p.length < 2
+                            ? Center(
+                                child: Text(AppLocalizations.of(context)!.noParticipants),
+                              )
+                            : FortuneWheel(
+                                selected: _selected.stream,
+                                animateFirst: false,
+                                indicators: const [
+                                  FortuneIndicator(
+                                    alignment: Alignment.topCenter,
+                                    child: TriangleIndicator(
+                                      color: Colors.redAccent,
+                                      width: 24,
+                                      height: 24,
+                                    ),
+                                  ),
+                                ],
+                                physics: CircularPanPhysics(
+                                  duration: const Duration(seconds: 2),
+                                  curve: Curves.easeOutCubic,
+                                ),
+                                items: p.asMap().entries.map((e) {
+                                  final pastelColors = [
+                                    Colors.amber.shade100,
+                                    Colors.cyan.shade100,
+                                    Colors.pink.shade100,
+                                    Colors.lime.shade100,
+                                    Colors.indigo.shade100,
+                                    Colors.deepOrange.shade100,
+                                    Colors.green.shade100,
+                                    Colors.purple.shade100,
+                                    Colors.blue.shade100,
+                                    Colors.teal.shade100,
+                                  ];
+                                  final borderColors = [
+                                    Colors.amber.shade400,
+                                    Colors.cyan.shade400,
+                                    Colors.pink.shade400,
+                                    Colors.lime.shade400,
+                                    Colors.indigo.shade400,
+                                    Colors.deepOrange.shade400,
+                                    Colors.green.shade400,
+                                    Colors.purple.shade400,
+                                    Colors.blue.shade400,
+                                    Colors.teal.shade400,
+                                  ];
+                                  return FortuneItem(
+                                    child: Transform.scale(
+                                      scale: 1.2,
+                                      child: Text(
+                                        e.value.name,
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  style: FortuneItemStyle(
-                                    color: pastelColors[e.key % pastelColors.length],
-                                    borderColor: borderColors[e.key % borderColors.length],
-                                    borderWidth: 3,
-                                  ),
-                                );
-                              }).toList(),
-                              onAnimationEnd: () {
-                                if (resultIndex == null || resultIndex! >= p.length) return;
+                                    style: FortuneItemStyle(
+                                      color: pastelColors[e.key % pastelColors.length],
+                                      borderColor: borderColors[e.key % borderColors.length],
+                                      borderWidth: 3,
+                                    ),
+                                  );
+                                }).toList(),
+                                onAnimationEnd: () {
+                                  if (resultIndex == null || resultIndex! >= p.length) return;
 
-                                final confirmedIndex = resultIndex!;
-                                final name = p[confirmedIndex].name;
+                                  final confirmedIndex = resultIndex!;
+                                  final name = p[confirmedIndex].name;
 
-                                provider.addHistory(name);
+                                  provider.addHistory(name);
 
-                                setState(() {
-                                  selectedIndexes.add(confirmedIndex);
-                                  confirmedIndexes.add(confirmedIndex);
-                                });
+                                  setState(() {
+                                    selectedIndexes.add(confirmedIndex);
+                                    confirmedIndexes.add(confirmedIndex);
+                                  });
 
-                                if (confirmedIndexes.length == spinCount) {
-                                  _confettiController.play();
-                                }
+                                  if (confirmedIndexes.length == spinCount) {
+                                    _confettiController.play();
+                                  }
 
-                                Future.delayed(const Duration(milliseconds: 800), _spinNext);
-                              },
-                            ),
+                                  Future.delayed(const Duration(milliseconds: 800), _spinNext);
+                                },
+                              ),
+                      ),
                     ),
                   ),
 
-                  // 당첨자 출력 텍스트
-                  SizedBox(
-                    height: 60,
-                    child: confirmedIndexes.length == spinCount
-                        ? Center(
-                            child: Text(
-                              '🎊 최종 당첨자: ${confirmedIndexes.map((i) => p[i].name).join(', ')}',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.teal,
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
+                  const SizedBox(height: 12),
 
-                  // 당첨자 리스트
+                  /// 당첨자 리스트
                   Expanded(
                     child: confirmedIndexes.isNotEmpty
                         ? ListView.builder(
@@ -708,29 +701,27 @@ class _RoulettePageState extends State<RoulettePage> {
                             itemBuilder: (context, index) {
                               final name = p[confirmedIndexes[index]].name;
                               return Card(
-                                elevation: 2,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
+                                elevation: 2,
                                 margin: const EdgeInsets.symmetric(vertical: 4),
                                 child: ListTile(
                                   leading: Icon(
                                     Icons.emoji_events,
                                     color: Colors.orange.shade800,
                                   ),
-                                  title:
-                                      Text('${_ordinal(index + 1)} 당첨자: $name'),
+                                  title: Text('${_ordinal(index + 1)} 당첨자: $name'),
                                 ),
                               );
                             },
                           )
                         : const SizedBox.shrink(),
                   ),
-                  const MyBannerAd(),
                 ],
               ),
 
-              // 축하 이펙트
+              // 🎊 축하 이펙트
               ConfettiWidget(
                 confettiController: _confettiController,
                 blastDirectionality: BlastDirectionality.explosive,
@@ -748,8 +739,6 @@ class _RoulettePageState extends State<RoulettePage> {
     );
   }
 }
-
-
 class HistoryPage extends StatelessWidget {
   const HistoryPage({super.key});
 
@@ -760,17 +749,19 @@ class HistoryPage extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value)); // 내림차순 정렬
 
     return Scaffold(
-      appBar: AppBar(title: const Text("📜 당첨 히스토리")),
+      appBar: AppBar(
+        title: Text("📜 ${AppLocalizations.of(context)!.history}"),
+      ),
       body: Column(
         children: [
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: entries.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
-                        "📭 아직 당첨 기록이 없습니다.",
-                        style: TextStyle(fontSize: 16),
+                        AppLocalizations.of(context)!.noHistory,
+                        style: const TextStyle(fontSize: 16),
                       ),
                     )
                   : Column(
@@ -804,7 +795,7 @@ class HistoryPage extends StatelessWidget {
                                     ),
                                   ),
                                   trailing: Text(
-                                    '${e.value}회',
+                                    '${e.value}${AppLocalizations.of(context)!.times}',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w500,
                                       fontSize: 15,
@@ -821,15 +812,15 @@ class HistoryPage extends StatelessWidget {
                             showDialog(
                               context: context,
                               builder: (_) => AlertDialog(
-                                title: const Text("🧹 히스토리 초기화"),
-                                content: const Text("정말로 모든 당첨 기록을 삭제하시겠습니까?"),
+                                title: Text(AppLocalizations.of(context)!.resetHistory),
+                                content: Text(AppLocalizations.of(context)!.confirmResetHistory),
                                 actions: [
                                   TextButton(
-                                    child: const Text("취소"),
+                                    child: Text(AppLocalizations.of(context)!.cancel),
                                     onPressed: () => Navigator.pop(context),
                                   ),
                                   TextButton(
-                                    child: const Text("초기화"),
+                                    child: Text(AppLocalizations.of(context)!.reset),
                                     onPressed: () {
                                       provider.clearHistory();
                                       Navigator.pop(context);
@@ -840,13 +831,13 @@ class HistoryPage extends StatelessWidget {
                             );
                           },
                           icon: const Icon(Icons.delete_forever),
-                          label: const Text("히스토리 초기화"),
+                          label: Text(AppLocalizations.of(context)!.resetHistory),
                         ),
                       ],
                     ),
             ),
           ),
-          const MyBannerAd(), // 하단 광고 추가
+          const MyBannerAd(), // 하단 배너
         ],
       ),
     );

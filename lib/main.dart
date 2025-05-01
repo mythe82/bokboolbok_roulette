@@ -14,6 +14,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
+  RequestConfiguration configuration = RequestConfiguration(testDeviceIds: ['D86D9B1F092E7C8CC61591C0B2B19CFE']);
+  MobileAds.instance.updateRequestConfiguration(configuration);
   AdHelper.loadInterstitialAd();
   final playerProvider = PlayerProvider();
   await playerProvider.loadFromPrefs();
@@ -107,7 +109,8 @@ class AdHelper {
     _isAdLoaded = false;
 
     InterstitialAd.load(
-      adUnitId: 'ca-app-pub-3940256099942544/1033173712',
+      adUnitId: 'ca-app-pub-3960681231120180/2725744412',
+      // adUnitId: 'ca-app-pub-3940256099942544/1033173712',
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
@@ -163,7 +166,8 @@ class _MyBannerAdState extends State<MyBannerAd> {
   void initState() {
     super.initState();
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
+      adUnitId: 'ca-app-pub-3960681231120180/2821709658',
+      // adUnitId: 'ca-app-pub-3940256099942544/6300978111',
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
@@ -505,233 +509,234 @@ class _RoulettePageState extends State<RoulettePage> {
           appBar: AppBar(
             title: Text("🎯 ${AppLocalizations.of(context)!.roulette}"),
           ),
-          body: Stack(
-            alignment: Alignment.center,
+          body: Column(
             children: [
-              Column(
-                children: [
-                  const SizedBox(height: 8),
-
-                  /// 당첨자 수 + 돌리기 버튼
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('${AppLocalizations.of(context)!.winner}:'),
-                      const SizedBox(width: 8),
-                      Opacity(
-                        opacity: _isSpinning ? 0.5 : 1.0,
-                        child: IgnorePointer(
-                          ignoring: _isSpinning,
-                          child: DropdownButton<int>(
-                            value: spinCount,
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  spinCount = value;
+              Expanded(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Column(
+                      children: [
+                        const SizedBox(height: 8),
+                        // 당첨자 수 + 돌리기 버튼
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('${AppLocalizations.of(context)!.winner}:'),
+                            const SizedBox(width: 8),
+                            Opacity(
+                              opacity: _isSpinning ? 0.5 : 1.0,
+                              child: IgnorePointer(
+                                ignoring: _isSpinning,
+                                child: DropdownButton<int>(
+                                  value: spinCount,
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        spinCount = value;
+                                        _resetGame();
+                                      });
+                                    }
+                                  },
+                                  items: List.generate(
+                                    p.length <= 1 ? 1 : p.length - 1,
+                                    (i) => DropdownMenuItem(
+                                      value: i + 1,
+                                      child: Text('${i + 1}${AppLocalizations.of(context)!.personUnit}'),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (!_isSpinning && AdHelper.isAdReady() && p.length >= 2)
+                              ElevatedButton.icon(
+                                onPressed: () {
                                   _resetGame();
-                                });
-                              }
-                            },
-                            items: List.generate(
-                              p.length <= 1 ? 1 : p.length - 1,
-                              (i) => DropdownMenuItem(
-                                value: i + 1,
-                                child: Text('${i + 1}${AppLocalizations.of(context)!.personUnit}'),
+                                  _startSpinning(p);
+                                },
+                                icon: const Icon(Icons.play_arrow),
+                                label: Text(AppLocalizations.of(context)!.spinRoulette),
                               ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (!_isSpinning && AdHelper.isAdReady() && p.length >= 2)
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            _resetGame();
-                            _startSpinning(p);
-                          },
-                          icon: const Icon(Icons.play_arrow),
-                          label: Text(AppLocalizations.of(context)!.spinRoulette),
-                        ),
-                      if (_isSpinning)
-                        const Padding(
-                          padding: EdgeInsets.only(left: 12),
-                          child: SizedBox(
-                            width: 30,
-                            height: 30,
-                            child: Center(
-                              child: AspectRatio(
-                                aspectRatio: 1,
-                                child: CircularProgressIndicator(strokeWidth: 3),
+                            if (_isSpinning)
+                              const Padding(
+                                padding: EdgeInsets.only(left: 12),
+                                child: SizedBox(
+                                  width: 30,
+                                  height: 30,
+                                  child: Center(
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: CircularProgressIndicator(strokeWidth: 3),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  /// 룰렛
-                  AspectRatio(
-                    aspectRatio: 1, // 정사각형 유지
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              Colors.grey.shade300,
-                              Colors.white,
-                            ],
-                            center: Alignment.topLeft,
-                            radius: 1.2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              offset: const Offset(0, 8),
-                              blurRadius: 12,
-                            ),
-                            BoxShadow(
-                              color: Colors.tealAccent.withOpacity(0.3),
-                              spreadRadius: 2,
-                              blurRadius: 15,
-                            ),
                           ],
                         ),
-                        padding: const EdgeInsets.all(12),
-                        child: p.length < 2
-                            ? Center(
-                                child: Text(AppLocalizations.of(context)!.noParticipants),
-                              )
-                            : FortuneWheel(
-                                selected: _selected.stream,
-                                animateFirst: false,
-                                indicators: const [
-                                  FortuneIndicator(
-                                    alignment: Alignment.topCenter,
-                                    child: TriangleIndicator(
-                                      color: Colors.redAccent,
-                                      width: 24,
-                                      height: 24,
-                                    ),
+                        const SizedBox(height: 12),
+                        // 룰렛
+                        AspectRatio(
+                          aspectRatio: 1,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    Colors.grey.shade300,
+                                    Colors.white,
+                                  ],
+                                  center: Alignment.topLeft,
+                                  radius: 1.2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    offset: const Offset(0, 8),
+                                    blurRadius: 12,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.tealAccent.withOpacity(0.3),
+                                    spreadRadius: 2,
+                                    blurRadius: 15,
                                   ),
                                 ],
-                                physics: CircularPanPhysics(
-                                  duration: const Duration(seconds: 2),
-                                  curve: Curves.easeOutCubic,
-                                ),
-                                items: p.asMap().entries.map((e) {
-                                  final pastelColors = [
-                                    Colors.amber.shade100,
-                                    Colors.cyan.shade100,
-                                    Colors.pink.shade100,
-                                    Colors.lime.shade100,
-                                    Colors.indigo.shade100,
-                                    Colors.deepOrange.shade100,
-                                    Colors.green.shade100,
-                                    Colors.purple.shade100,
-                                    Colors.blue.shade100,
-                                    Colors.teal.shade100,
-                                  ];
-                                  final borderColors = [
-                                    Colors.amber.shade400,
-                                    Colors.cyan.shade400,
-                                    Colors.pink.shade400,
-                                    Colors.lime.shade400,
-                                    Colors.indigo.shade400,
-                                    Colors.deepOrange.shade400,
-                                    Colors.green.shade400,
-                                    Colors.purple.shade400,
-                                    Colors.blue.shade400,
-                                    Colors.teal.shade400,
-                                  ];
-                                  return FortuneItem(
-                                    child: Transform.scale(
-                                      scale: 1.2,
-                                      child: Text(
-                                        e.value.name,
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                    ),
-                                    style: FortuneItemStyle(
-                                      color: pastelColors[e.key % pastelColors.length],
-                                      borderColor: borderColors[e.key % borderColors.length],
-                                      borderWidth: 3,
-                                    ),
-                                  );
-                                }).toList(),
-                                onAnimationEnd: () {
-                                  if (resultIndex == null || resultIndex! >= p.length) return;
-
-                                  final confirmedIndex = resultIndex!;
-                                  final name = p[confirmedIndex].name;
-
-                                  provider.addHistory(name);
-
-                                  setState(() {
-                                    selectedIndexes.add(confirmedIndex);
-                                    confirmedIndexes.add(confirmedIndex);
-                                  });
-
-                                  if (confirmedIndexes.length == spinCount) {
-                                    _confettiController.play();
-                                  }
-
-                                  Future.delayed(const Duration(milliseconds: 800), _spinNext);
-                                },
                               ),
-                      ),
+                              padding: const EdgeInsets.all(12),
+                              child: p.length < 2
+                                  ? Center(
+                                      child: Text(AppLocalizations.of(context)!.noParticipants),
+                                    )
+                                  : FortuneWheel(
+                                      selected: _selected.stream,
+                                      animateFirst: false,
+                                      indicators: const [
+                                        FortuneIndicator(
+                                          alignment: Alignment.topCenter,
+                                          child: TriangleIndicator(
+                                            color: Colors.redAccent,
+                                            width: 24,
+                                            height: 24,
+                                          ),
+                                        ),
+                                      ],
+                                      physics: CircularPanPhysics(
+                                        duration: const Duration(seconds: 2),
+                                        curve: Curves.easeOutCubic,
+                                      ),
+                                      items: p.asMap().entries.map((e) {
+                                        final pastelColors = [
+                                          Colors.amber.shade100,
+                                          Colors.cyan.shade100,
+                                          Colors.pink.shade100,
+                                          Colors.lime.shade100,
+                                          Colors.indigo.shade100,
+                                          Colors.deepOrange.shade100,
+                                          Colors.green.shade100,
+                                          Colors.purple.shade100,
+                                          Colors.blue.shade100,
+                                          Colors.teal.shade100,
+                                        ];
+                                        final borderColors = [
+                                          Colors.amber.shade400,
+                                          Colors.cyan.shade400,
+                                          Colors.pink.shade400,
+                                          Colors.lime.shade400,
+                                          Colors.indigo.shade400,
+                                          Colors.deepOrange.shade400,
+                                          Colors.green.shade400,
+                                          Colors.purple.shade400,
+                                          Colors.blue.shade400,
+                                          Colors.teal.shade400,
+                                        ];
+                                        return FortuneItem(
+                                          child: Transform.scale(
+                                            scale: 1.2,
+                                            child: Text(
+                                              e.value.name,
+                                              style: const TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          style: FortuneItemStyle(
+                                            color: pastelColors[e.key % pastelColors.length],
+                                            borderColor: borderColors[e.key % borderColors.length],
+                                            borderWidth: 3,
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onAnimationEnd: () {
+                                        if (resultIndex == null || resultIndex! >= p.length) return;
+
+                                        final confirmedIndex = resultIndex!;
+                                        final name = p[confirmedIndex].name;
+
+                                        provider.addHistory(name);
+
+                                        setState(() {
+                                          selectedIndexes.add(confirmedIndex);
+                                          confirmedIndexes.add(confirmedIndex);
+                                        });
+
+                                        if (confirmedIndexes.length == spinCount) {
+                                          _confettiController.play();
+                                        }
+
+                                        Future.delayed(const Duration(milliseconds: 800), _spinNext);
+                                      },
+                                    ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // 당첨자 리스트
+                        Expanded(
+                          child: confirmedIndexes.isNotEmpty
+                              ? ListView.builder(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  itemCount: confirmedIndexes.length,
+                                  itemBuilder: (context, index) {
+                                    final name = p[confirmedIndexes[index]].name;
+                                    return Card(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      elevation: 2,
+                                      margin: const EdgeInsets.symmetric(vertical: 4),
+                                      child: ListTile(
+                                        leading: Icon(
+                                          Icons.emoji_events,
+                                          color: Colors.orange.shade800,
+                                        ),
+                                        title: Text('${_ordinal(index + 1)} 당첨자: $name'),
+                                      ),
+                                    );
+                                  },
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
                     ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  /// 당첨자 리스트
-                  Expanded(
-                    child: confirmedIndexes.isNotEmpty
-                        ? ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: confirmedIndexes.length,
-                            itemBuilder: (context, index) {
-                              final name = p[confirmedIndexes[index]].name;
-                              return Card(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 2,
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                child: ListTile(
-                                  leading: Icon(
-                                    Icons.emoji_events,
-                                    color: Colors.orange.shade800,
-                                  ),
-                                  title: Text('${_ordinal(index + 1)} 당첨자: $name'),
-                                ),
-                              );
-                            },
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
+                    // 축하 이펙트
+                    ConfettiWidget(
+                      confettiController: _confettiController,
+                      blastDirectionality: BlastDirectionality.explosive,
+                      shouldLoop: false,
+                      emissionFrequency: 0.05,
+                      numberOfParticles: 30,
+                      maxBlastForce: 20,
+                      minBlastForce: 5,
+                      gravity: 0.3,
+                    ),
+                  ],
+                ),
               ),
-
-              // 🎊 축하 이펙트
-              ConfettiWidget(
-                confettiController: _confettiController,
-                blastDirectionality: BlastDirectionality.explosive,
-                shouldLoop: false,
-                emissionFrequency: 0.05,
-                numberOfParticles: 30,
-                maxBlastForce: 20,
-                minBlastForce: 5,
-                gravity: 0.3,
-              ),
+              const MyBannerAd(), // ✅ 하단에 광고 추가
             ],
           ),
         );
@@ -739,6 +744,7 @@ class _RoulettePageState extends State<RoulettePage> {
     );
   }
 }
+
 class HistoryPage extends StatelessWidget {
   const HistoryPage({super.key});
 
